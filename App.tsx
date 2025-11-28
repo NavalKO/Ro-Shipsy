@@ -174,7 +174,7 @@ const App: React.FC = () => {
         {/* Top Header & Navigation */}
         <div className="mb-12 flex flex-col items-center">
           <div className="flex items-center gap-2 mb-6 px-4 py-1.5 bg-white/80 border border-slate-200 rounded-md shadow-sm backdrop-blur-md">
-             <img src="https://shipsy-public-assets.s3.amazonaws.com/generic/file-d5928432-b9a1-48fd-bf79-0bca84663c45.jpeg" alt="Shipsy" className="h-8" />
+             <img src="https://shipsy-public-assets.s3.amazonaws.com/generic/file-d5928432-b9a1-48fd-bf79-0bca84663c45.jpeg" alt="Shipsy" className="h-8 rounded-md" />
             <span className="w-1 h-1 rounded-md bg-slate-300" />
             <span className="text-xs font-semibold text-slate-500 tracking-wider uppercase">Route Optimizer POC</span>
           </div>
