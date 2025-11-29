@@ -123,7 +123,7 @@ export const AnalysisPage: React.FC<AnalysisPageProps> = ({ initialScenario }) =
 
     try {
       // Attempt to fetch from real webhook (Production URL)
-      const response = await fetch('https://wbdemo.shipsy.io/webhook-test/RPO', {
+      const response = await fetch('https://wbdemo.shipsy.io/webhook/RPO', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json', 
