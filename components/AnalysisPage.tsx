@@ -61,40 +61,7 @@ interface AnalysisPageProps {
 // ----------------------------------------------------------------------
 // Mock Data (Fallback for CORS issues)
 // ----------------------------------------------------------------------
-const MOCK_RESPONSE_DATA: WebhookResponseItem = {
-  "success": true,
-  "request_id": "IDBtest3",
-  "hub_code": "PALAK",
-  "summary": {
-    "total_trips": 1,
-    "total_distance_km": 0.06,
-    "avg_trip_distance_km": 0.06,
-    "total_trip_hours": 2.11,
-    "avg_trip_hours": 2.11,
-    "total_consignments_planned": 13,
-    "total_consignments_served": 10,
-    "total_consignments_dropped": 3,
-    "avg_stops_per_trip": 10
-  },
-  "trip_matrix": [
-    {
-      "vehicle_code": "AW9910",
-      "trip_index": 1,
-      "num_tasks": 10,
-      "distance_km": 0.06,
-      "duration_hours": 2.11
-    }
-  ],
-  "drop_breakup": [
-    {
-      "reason_code": "WEIGHT_CONSTRAINT_BREACH",
-      "reason_label": "Insufficient weight",
-      "dropped_count": 3,
-      "pct_of_dropped": 100,
-      "pct_of_planned": 23.08
-    }
-  ]
-};
+
 
 export const AnalysisPage: React.FC<AnalysisPageProps> = ({ initialScenario }) => {
   const [mode, setMode] = useState<AnalysisMode>('SINGLE');
