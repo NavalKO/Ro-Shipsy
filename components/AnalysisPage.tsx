@@ -84,83 +84,98 @@ export const AnalysisPage: React.FC<AnalysisPageProps> = ({ initialScenario }) =
   };
 
   // Core Fetch Logic
-  const fetchScenarioData = async (scenarioName: string): Promise<DetailedMetrics | null> => {
-    let item: WebhookResponseItem | undefined;
-    let isMock = false;
+const fetchScenarioData = async (scenarioName: string): Promise<DetailedMetrics | null> => {
+  let item: WebhookResponseItem | undefined;
+  let isMock = false;
 
-    try {
-      // Attempt to fetch from real webhook (Production URL)
-      const response = await fetch('https://wbdemo.shipsy.io/webhook/RPO', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json', 
-        },
-        body: JSON.stringify({ request_id: scenarioName }),
-      });
+  try {
+    // Attempt to fetch from real webhook (Production URL)
+    const response = await fetch('https://wbdemo.shipsy.io/webhook/RPO', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ request_id: scenarioName }),
+    });
 
-      if (!response.ok) {
-        throw new Error(`Server returned ${response.status}`);
-      }
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
+    }
 
-      const jsonResponse: WebhookResponseItem | WebhookResponseItem[] = await response.json();
-      
-      if (Array.isArray(jsonResponse)) {
-        item = jsonResponse[0];
-      } else {
-        item = jsonResponse;
-      }
+    const jsonResponse: any = await response.json();
 
-    } catch (error) {
-      // Gracefully handle CORS/Network errors by using simulation data
-      console.info(`[Info] Network request blocked or failed for ${scenarioName}. Switching to Simulation Mode.`);
-      
-      // Simulate network delay for realism
-      await new Promise(resolve => setTimeout(resolve, 600));
-      
-      // Use the hardcoded response but override ID to match request for UI consistency
-      item = { 
-        ...MOCK_RESPONSE_DATA, 
-        request_id: scenarioName 
+    // Handle multiple server shapes:
+    // 1) An array of items: [ { ... } ]
+    // 2) A wrapper object with data array: { data: [ { ... } ] }
+    // 3) A single object: { ... }
+    let candidate: any = null;
+    if (Array.isArray(jsonResponse)) {
+      candidate = jsonResponse.length > 0 ? jsonResponse[0] : undefined;
+    } else if (jsonResponse && Array.isArray(jsonResponse.data)) {
+      candidate = jsonResponse.data.length > 0 ? jsonResponse.data[0] : undefined;
+    } else {
+      candidate = jsonResponse;
+    }
+
+    item = candidate;
+
+  } catch (error) {
+    // Gracefully handle CORS/Network errors by using simulation data
+    console.info(`[Info] Network request blocked or failed for ${scenarioName}. Switching to Simulation Mode.`, error);
+
+    // Simulate network delay for realism
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    // Use the hardcoded response but override ID to match request for UI consistency
+    if (typeof (global as any).MOCK_RESPONSE_DATA !== 'undefined') {
+      item = {
+        ...(global as any).MOCK_RESPONSE_DATA,
+        request_id: scenarioName,
       };
       isMock = true;
+    } else {
+      // If MOCK_RESPONSE_DATA isn't defined, return null (and allow upstream error handling)
+      console.warn('[Info] MOCK_RESPONSE_DATA not defined; cannot fallback to mock.');
+      return null;
     }
+  }
 
-    if (!item) return null;
-    
-    // If successful=false comes from the API (not mock), ignore it so we can error out
-    if (item.success === false && !isMock) {
-       console.warn(`API returned success: false for ${scenarioName}`);
-       return null;
-    }
+  if (!item) return null;
 
-    const summary = item.summary;
-    if (!summary) return null;
+  // If successful=false comes from the API (not mock), ignore it so we can error out
+  if (item.success === false && !isMock) {
+    console.warn(`API returned success: false for ${scenarioName}`);
+    return null;
+  }
 
-    const totalPlanned = summary.total_consignments_planned || 1;
-    const dropSplit = (summary.total_consignments_dropped / totalPlanned) * 100;
+  const summary = item.summary;
+  if (!summary) return null;
 
-    return {
-      id: item.request_id || scenarioName,
-      hub: item.hub_code || 'N/A',
-      totalTrips: summary.total_trips || 0,
-      avgDistance: summary.avg_trip_distance_km || 0,
-      avgDistanceStr: (summary.avg_trip_distance_km || 0).toFixed(2),
-      totalStops: summary.total_consignments_served || 0,
-      avgConsignments: summary.avg_stops_per_trip || 0,
-      avgConsignmentsStr: (summary.avg_stops_per_trip || 0).toFixed(1),
-      avgTripTimeStr: formatHoursToHHMM(summary.avg_trip_hours || 0),
-      
-      totalDrops: summary.total_consignments_dropped || 0,
-      dropSplit: dropSplit,
-      dropSplitStr: dropSplit.toFixed(1),
-      dropReasons: (item.drop_breakup || []).map(d => ({
-        reason: d.reason_label || d.reason_code,
-        count: d.dropped_count
-      })).sort((a, b) => b.count - a.count),
-      
-      isMock
-    };
+  const totalPlanned = summary.total_consignments_planned || 1;
+  const dropSplit = (summary.total_consignments_dropped || 0) / totalPlanned * 100;
+
+  return {
+    id: item.request_id || scenarioName,
+    hub: item.hub_code || 'N/A',
+    totalTrips: summary.total_trips || 0,
+    avgDistance: summary.avg_trip_distance_km || 0,
+    avgDistanceStr: (summary.avg_trip_distance_km || 0).toFixed(2),
+    totalStops: summary.total_consignments_served || 0,
+    avgConsignments: summary.avg_stops_per_trip || 0,
+    avgConsignmentsStr: (summary.avg_stops_per_trip || 0).toFixed(1),
+    avgTripTimeStr: formatHoursToHHMM(summary.avg_trip_hours || 0),
+
+    totalDrops: summary.total_consignments_dropped || 0,
+    dropSplit: dropSplit,
+    dropSplitStr: dropSplit.toFixed(1),
+    dropReasons: (item.drop_breakup || []).map((d: any) => ({
+      reason: d.reason_label || d.reason_code,
+      count: d.dropped_count || 0
+    })).sort((a: any, b: any) => b.count - a.count),
+
+    isMock
   };
+};
 
   // Execution Logic (separated from event handler)
   const executeSearch = useCallback(async (scenarios: string[]) => {
